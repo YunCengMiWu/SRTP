@@ -1,0 +1,99 @@
+import turtle as tt
+from random import randint
+
+# 单显示器适配设置
+W, H = 900, 900
+screen = tt.Screen()
+screen.setup(W, H)  # 移除 startx/starty 参数，自动居中窗口
+screen.screensize(canvheight=1.5*H, canvwidth=1.5*W)
+screen.bgcolor('gray')
+screen.title('Autumn Tree')
+screen.delay(0)
+tt.tracer(0)  # 禁用动画加速绘制
+
+# 树参数（保持原有参数）
+THICKNESS = 50  # 控制树干初始粗细
+ITERATIONS = 5  # 降低迭代次数防止卡死
+AXIOM = 'CCCCA'
+ANGLE = 14
+STEP = 20  # 控制生长步长（值越大，树越高）
+RAND_MIN, RAND_MAX = 0, 10
+
+# 颜色配置（保持原有配置）
+TRUNK_COLOR = "#350B02"
+colors = {
+    0: '#228B22', 1: '#9ACD32', 2: '#FFA500', 3: '#D2691E',
+    4: '#556B2F', 5: '#B22222', 6: '#667900', 7: '#FFD700',
+    8: '#BDB76B', 9: '#DC143C', 10: '#3CB371'
+}
+
+# L-system规则（保持原有规则）
+rules = {"B": "CB", "A": "B[-CA]+CA"}
+
+def apply_rules(axiom):
+    sequence = axiom
+    for _ in range(ITERATIONS):
+        new_seq = []
+        for char in sequence:
+            new_seq.append(rules.get(char, char))
+        sequence = ''.join(new_seq)
+    return sequence
+
+def draw_tree(seq, thickness, angle, step):
+    stack = []
+    tt.pencolor(TRUNK_COLOR)
+    tt.pensize(thickness)
+    current_thick = thickness
+
+    for symbol in seq:
+        if symbol == "+":
+            tt.right(angle - randint(-13, 13))
+        elif symbol == "-":
+            tt.left(angle - randint(-13, 13))
+        elif symbol == "C":
+            if randint(RAND_MIN, RAND_MAX) > 4:
+                tt.forward(step)
+        elif symbol == "B":
+            if randint(RAND_MIN, RAND_MAX) > 6:
+                tt.forward(step)
+        elif symbol == "A":
+            r = randint(RAND_MIN, RAND_MAX)
+            if r == 5 and randint(0, 10) > 8:
+                # 绘制红色果实（使用圆点更自然）
+                tt.pencolor(colors[r])
+                tt.dot(18)
+                tt.pencolor(TRUNK_COLOR)
+            else:
+                # 绘制彩色叶子
+                tt.pencolor(colors[r])
+                tt.pensize(current_thick * 0.4)
+                tt.forward(step/2)
+                tt.pensize(current_thick)
+                tt.pencolor(TRUNK_COLOR)
+        elif symbol == "[":
+            # 保存当前状态：位置、角度、粗细
+            stack.append((tt.xcor(), tt.ycor(), tt.heading(), current_thick))
+            current_thick *= 0.75  # 分支变细
+            tt.pensize(current_thick)
+        elif symbol == "]":
+            # 恢复之前保存的状态
+            tt.penup()
+            x, y, h, t = stack.pop()
+            tt.goto(x, y)
+            tt.setheading(h)
+            current_thick = t
+            tt.pensize(current_thick)
+            tt.pendown()
+
+# 初始化绘制位置
+tt.penup()
+tt.goto(0, -H//2 + 50)  # 从窗口底部略微上方开始
+tt.setheading(90)        # 初始方向垂直向上
+tt.pendown()
+
+# 生成并绘制
+seq = apply_rules(AXIOM)
+draw_tree(seq, THICKNESS, ANGLE, STEP)
+tt.update()  # 完成绘制后刷新画面
+
+screen.exitonclick()
